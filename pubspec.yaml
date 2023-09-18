@@ -43,6 +43,7 @@ dependencies:
   basic_utils: ^5.6.1
   sensors_plus: ^3.0.3
   flutter_sensors: ^1.0.1
+  share_plus: ^7.1.0
 
 dev_dependencies:
   flutter_test:
