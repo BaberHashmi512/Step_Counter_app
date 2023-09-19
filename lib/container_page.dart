@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -26,6 +27,8 @@ class _ContainerPageState extends State<ContainerPage>
   XFile? selectedImage;
   AppLifecycleState? _appLifecycleState;
   final GlobalKey globalKey = GlobalKey();
+  bool isButtonVisible = true;
+  double totalKilometers = 0.0;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _ContainerPageState extends State<ContainerPage>
       }
       previousValue = currentValue;
     });
+    _calculateTotalKilometers();
   }
 
   @override
@@ -66,6 +70,34 @@ class _ContainerPageState extends State<ContainerPage>
         return print("Chal Rahi h");
       }
       print(_appLifecycleState);
+    });
+  }
+
+  void _calculateTotalKilometers() async {
+    List<Position> positions = [];
+
+    for (int i = 0; i < 100; i++) {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      positions.add(position);
+    }
+
+    double kilometers = 0.0;
+
+    for (int i = 0; i < positions.length - 1; i++) {
+      double distanceInMeters = Geolocator.distanceBetween(
+        positions[i].latitude,
+        positions[i].longitude,
+        positions[i + 1].latitude,
+        positions[i + 1].longitude,
+      );
+
+      kilometers += distanceInMeters / 1000;
+    }
+
+    setState(() {
+      totalKilometers = kilometers;
     });
   }
 
@@ -275,24 +307,40 @@ class _ContainerPageState extends State<ContainerPage>
                         ],
                       ),
                       const SizedBox(height: 16.0),
-                      const Row(
+                      Row(
                         children: [
-                          Text(
+                          const Text(
                             "kms walked:",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
-                          SizedBox(
+                          const SizedBox(
                             width: 16.0,
                           ),
                           Text(
-                            "Sample Text",
-                            style: TextStyle(
+                            totalKilometers.toStringAsFixed(2),
+                            style: const TextStyle(
                               color: Colors.black87,
                             ),
                           ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          GestureDetector(
+                              onTap: _calculateTotalKilometers,
+                              child: Image.asset(
+                                "assets/images/refresh.png",
+                                height: 20,
+                                width: 20,
+                                color: Colors.black,
+                              ))
+                          // IconButton(
+                          //   icon: const Icon(Icons.refresh_outlined),
+                          //   onPressed:
+                          //       _calculateTotalKilometers, // Recalculate when refreshed
+                          // ),
                         ],
                       ),
                       const SizedBox(height: 16.0),
@@ -308,6 +356,8 @@ class _ContainerPageState extends State<ContainerPage>
                           SizedBox(
                             width: 80,
                             child: TextFormField(
+                              autofocus: false,
+                              focusNode: FocusNode(canRequestFocus: false),
                               keyboardType: TextInputType.number,
                             ),
                           )
@@ -316,13 +366,21 @@ class _ContainerPageState extends State<ContainerPage>
                       const SizedBox(
                         height: 20,
                       ),
-                      // Align(
-                      //   alignment: Alignment.bottomRight,
-                      //   child: ElevatedButton(
-                      //     onPressed: _shareCard,
-                      //     child: const Text("Share"),
-                      //   ),
-                      // )
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Visibility(
+                          visible: isButtonVisible,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              setState(() {
+                                isButtonVisible = false;
+                              });
+                              await _shareCard();
+                            },
+                            child: const Text("Share"),
+                          ),
+                        ),
+                      )
                     ],
                   ),
                 ),
